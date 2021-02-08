@@ -4,11 +4,10 @@
 <head>
   <title>server</title>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <link rel="stylesheet" href="/static/css/index.css"/>
   <script type="text/javascript">
     document.write('<link rel="stylesheet" href="/node_modules/bootstrap/dist/css/bootstrap.css?time=' +
-            new Date().getTime() + '"/>')
-    document.write('<link rel="stylesheet" href="/static/css/index.css?time=' + new Date().getTime() + '"/>')
+            new Date().getTime() + '"/>');
+    document.write('<link rel="stylesheet" href="/static/css/index.css?time=' + new Date().getTime() + '"/>');
   </script>
 </head>
 
@@ -20,30 +19,34 @@
       <p>姓名: <span id="username"></span></p>
       <form>
         <div class="form-group">
-          <input id="username-input" type="text" class="form-control" value="Scott"/>
           <input id="msg" type="text" class="form-control"/>
         </div>
       </form>
       <div class="text-right">
+        <button id="btn-ready" class="btn btn-info">准备</button>
         <button id="btn-send" class="btn btn-info">发送</button>
       </div>
     </div>
     <ul id="your-message"></ul>
   </header>
+  <div id="gamewindow">
+    game on!
+  </div>
   <div class="content">
   </div>
   <script src="/node_modules/jquery/dist/jquery.js"></script>
   <script src="/node_modules/popper.js/dist/popper.js" type="module"></script>
   <script src="/node_modules/bootstrap/dist/js/bootstrap.js"></script>
+  <script src="/static/js/cookie.js"></script>
   <script>
-    var wsProcess = function(myId) {
+    var wsProcess = function(myId, myUsername) {
+      $("#username").text(myUsername);
       let ws = new WebSocket('ws://' + window.location.host + '/ws');
-      let usernameInput = $("#username-input").val();
       let ids = new Map();
       // 建立连接后发送空消息带id，建立用户和连接的关系，断开连接时清除登录状态
       ws.onopen = function(e) {
         console.log("websocket opened!");
-        let messageInfo = {id: myId, msg: "", username: usernameInput};
+        let messageInfo = {id: myId, msg: "", username: myUsername};
         ws.send(JSON.stringify(messageInfo));
       }
       // 服务器WebSocket消息处理
@@ -77,6 +80,8 @@
               let userBoxDiv = $('<div>').attr('class', 'box').attr('id', id);
               let userNameEle = $('<h2>').text(users[id]);
               userBoxDiv.append(userNameEle);
+              let toolBoxDiv = $('<div>').text("道具栏：");
+              userBoxDiv.append(toolBoxDiv);
               $(".content").append(userBoxDiv);
             }
           }
@@ -85,14 +90,17 @@
             let eleId = "#" + message["id"];
             console.log("message from", eleId);
             $('<p>').text(message["msg"]).appendTo($(eleId));
+            if ($(eleId).children().length > 5) {
+              $(eleId).children().eq(2).remove();
+            }
           }
         }
       };
       // 每次发消息时在服务器校验id
       $("#btn-send").click(function() {
         let msg = $("#msg").val();
-        if (msg.length > 0 && usernameInput.length > 0) {
-          let messageInfo = {id: myId, msg: msg, username: usernameInput};
+        if (msg.length > 0) {
+          let messageInfo = {id: myId, msg: msg, username: myUsername};
           ws.send(JSON.stringify(messageInfo));
         } else {
           alert("消息不能为空！");
@@ -100,15 +108,28 @@
       });
     };
     $(function() {
-      let usernameInput = $("#username-input").val();
-      let userInfo = {username: usernameInput, password: "password"};
-      // 用户登录
-      $.post('/user', JSON.stringify(userInfo), function (data, status) {
-        if (status == "success") {
-          let myId = data;
-          wsProcess(myId);
-        }
-      });
+      let username = getCookie("username");
+      let id = getCookie("token");
+      console.log("id:", id);
+      console.log("username:", username);
+      let userInfo = {username: username, id: id};
+      if (username != "" && id != "") {
+        // 用户鉴权
+        $.post('/checkuser', JSON.stringify(userInfo), function (data, status) {
+          if (status == "success") {
+            console.log("checkuser:", data);
+            if (data == "ok") {
+              wsProcess(id, username);
+            } else {
+              $(window).attr("location", "/");
+            }
+          }
+        });
+        // todo: 定时检查cookie，问题：多开窗口检查
+        
+      } else {
+        $(window).attr("location", "/");
+      }
     });
     
   </script>

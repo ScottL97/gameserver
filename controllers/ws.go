@@ -35,9 +35,9 @@ func (c *WebSocketController) Get() {
 }
 
 func sendServerInfo() {
-	// 每隔1s向客户端广播服务器信息
+	// 每隔100ms向客户端广播服务器信息
 	for {
-		time.Sleep(time.Second)
+		time.Sleep(time.Millisecond * 100)
 		// fmt.Println(getUserManager().loginUsers)
 		serverInfo := models.ServerInfo{Users: getUserManager().loginUsers}
 		//fmt.Println("send: ", serverInfo)

@@ -4,13 +4,23 @@
 }
 body {
     display: flex;
-    min-height: 100vh;
     background: lightgreen;
 }
 header {
     background: lightyellow;
-    width: 300px;
+    min-width: 300px;
     padding: 10px;
+    margin: 10px;
+    border: 5px solid lightcoral;
+}
+
+#gamewindow {
+    background-color: aqua;
+    min-width: 800px;
+    height: 100vh;
+    margin: 10px;
+    padding: 10px;
+    border: 5px solid lightcoral;
 }
 
 .content {
@@ -18,14 +28,15 @@ header {
     flex-wrap: wrap;
     align-items: start;
     justify-content: center;
+    margin: 10px;
 }
 
 .box {
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-height: 40vh;
-    width: 500px;
+    min-height: 30vh;
+    width: 300px;
     border: 5px solid lightcoral;
     background: lightskyblue;
 }

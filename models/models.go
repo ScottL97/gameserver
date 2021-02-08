@@ -11,6 +11,11 @@ type User struct {
 	Password string `json:"password"`
 }
 
+type UserCheck struct {
+	Username string `json:"username"`
+	Id       string `json:"id"`
+}
+
 type ClientMsg struct {
 	Id       string `json:"id"`
 	Msg      string `json:"msg"`

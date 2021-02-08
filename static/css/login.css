@@ -1,0 +1,16 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+body {
+    display: flex;
+    justify-content: center;
+    padding: 20vh;
+    background: lightgreen;
+}
+.login-box {
+    background-color: lightcoral;
+    width: 500px;
+    padding: 20px;
+    border-radius: 20px;
+}
