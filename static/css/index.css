@@ -13,14 +13,58 @@ header {
     margin: 10px;
     border: 5px solid lightcoral;
 }
+#your-message {
+    margin: 16px 0;
+    background: wheat;
+    border-radius: 10px;
+}
+.msg {
+    list-style: none;
+    border: 3px solid lightsalmon;
+    border-radius: 10px;
+    padding: 6px 6px;
+    background: lavender;
+    margin: 6px 6px;
+}
+.toolbox {
+    align-items: center;
+    display: flex;
+    margin: 10px 10px;
+    padding: 10px 10px;
+    border: 3px solid lightcoral;
+    border-radius: 10px;
+    background: lightpink;
+}
+.toolbox h2 {
+    margin: 10px;
+}
+.toolicon img {
+    width: 60px;
+    margin: 5px 5px;
+    padding: 5px 5px;
+    border-radius: 10px;
+    border: 2px solid lightblue;
+}
+.toolicon img:hover {
+    background: lightsalmon;
+}
 
 #gamewindow {
     background-color: aqua;
     min-width: 800px;
-    height: 100vh;
+    height: 96vh;
     margin: 10px;
     padding: 10px;
     border: 5px solid lightcoral;
+}
+#gameheader {
+    background: lightcoral;
+    padding: 10px 10px;
+    border-radius: 6px;
+    opacity: 90%;
+}
+#gamecharge {
+    float: right;
 }
 
 .content {
