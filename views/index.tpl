@@ -8,6 +8,7 @@
     document.write('<link rel="stylesheet" href="/node_modules/bootstrap/dist/css/bootstrap.css?time=' +
             new Date().getTime() + '"/>');
     document.write('<link rel="stylesheet" href="/static/css/index.css?time=' + new Date().getTime() + '"/>');
+    document.write('<link rel="stylesheet" href="/static/css/game.css?time=' + new Date().getTime() + '"/>');
   </script>
 </head>
 
@@ -40,8 +41,261 @@
   </header>
   <div id="gamewindow">
     <div id="gameheader">
-      <span id="gamename">游戏名：勇士沾恶龙</span>
-      <span id="gamecharge">剩余电量：10%</span>
+      <span id="gamename">游戏名：消毒小队</span>
+      <span id="gameround"> Round 1</span>
+    </div>
+    <div id="game" style="display: none;">
+      <div id="0-0" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="0-1" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="0-2" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="0-3" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="0-4" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="0-5" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="0-6" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+
+      <div id="1-0" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="1-1" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="1-2" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="1-3" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="1-4" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="1-5" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="1-6" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+
+      <div id="2-0" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="2-1" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="2-2" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="2-3" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="2-4" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="2-5" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="2-6" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+
+      <div id="3-0" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="3-1" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="3-2" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="3-3" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="3-4" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="3-5" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="3-6" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+
+      <div id="4-0" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="4-1" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="4-2" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="4-3" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="4-4" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="4-5" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="4-6" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+
+      <div id="5-0" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="5-1" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="5-2" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="5-3" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="5-4" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="5-5" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="5-6" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+
+      <div id="6-0" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="6-1" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="6-2" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="6-3" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="6-4" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="6-5" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
+      <div id="6-6" class="square">
+        <p></p>
+        <p></p>
+        <p></p>
+      </div>
     </div>
   </div>
   <div class="content">

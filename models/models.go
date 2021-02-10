@@ -21,3 +21,7 @@ type ClientMsg struct {
 	Msg      string `json:"msg"`
 	UserName string `json:"username"`
 }
+
+type StatusReq struct {
+	Running string `json:"running"`
+}

@@ -50,6 +50,9 @@ header {
 }
 
 #gamewindow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     background-color: aqua;
     min-width: 800px;
     height: 96vh;

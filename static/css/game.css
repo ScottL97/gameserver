@@ -1,0 +1,37 @@
+#game {
+    display: grid;
+    margin: 10px 10px;
+    background: yellowgreen;
+    grid-template-columns: 80px 80px 80px 80px 80px 80px 80px;
+    grid-template-rows: 80px 80px 80px 80px 80px 80px 80px;
+    /*border: 5px solid salmon;*/
+}
+
+.square {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: lightyellow;
+    border: 2px solid black;
+    flex-direction: column;
+}
+.square:hover {
+    background: lightgreen;
+}
+.square p {
+    margin: 0;
+}
+.square p img {
+    border-radius: 10px;
+    width: 20px;
+}
+
+.level1 {
+    background: green;
+}
+.level2 {
+    background: yellow;
+}
+.level3 {
+    background: red;
+}

@@ -11,6 +11,8 @@ func init() {
 	beego.Router("/ws", &controllers.WebSocketController{})
 	beego.Router("/user", &controllers.UserController{}, "post:LoginUser")
 	beego.Router("/checkuser", &controllers.UserController{}, "post:CheckUser")
+	beego.Router("/gamectrl/ready/:username", &controllers.GameController{}, "get:UserReady")
+	beego.Router("/gamectrl/cancel/:username", &controllers.GameController{}, "get:UserCancel")
 	beego.Router("/", &controllers.UserController{}, "get:Get")
 	beego.SetStaticPath("/node_modules", "node_modules")
 }

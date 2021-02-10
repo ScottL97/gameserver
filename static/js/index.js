@@ -3,6 +3,9 @@
 var ids = new Map();
 var myName = "";
 var myId = "";
+// 点击准备/取消准备按钮后，按钮上显示的文字
+var readyChangeStatus = {'ready': '取消准备', 'cancel': '准备'};
+var occupations = ["scientist", "engineer", "doctor", "driver"];
 // 发送消息文本框中的内容
 var sendMessage = function (ws) {
     let msg = $("#msg").val();
@@ -101,6 +104,57 @@ var checkUser = function(callback) {
             }
         });
     }, 1000);
+};
+// 玩家准备/取消准备
+var userChangeReady = function(action) {
+    $.get("/gamectrl/" + action + "/" + myName, function(data, status) {
+        if (status == "success") {
+            if (data == "ok") {
+                $("#btn-ready").text(readyChangeStatus[action]);
+            } else {
+                alert("游戏正在进行中，请稍等...");
+            }
+        }
+    });
+};
+// 游戏开始、结束
+var changeGameStatus = function(running) {
+    console.log(running);
+    if (running == "yes") {
+        $("#game").show(1000);
+    } else {
+        $("#game").hide(1000);
+    }
+};
+// 更新游戏信息
+var updateGame = function(req) {
+    console.log(req);
+    // 更新回合数
+    $("#gameround").text(" Round " + req["round"]);
+    // 更新地图显示
+    let map = req["map"];
+    for (let i = 0; i < 7; i++) {
+        for (let j = 0; j < 7; j++) {
+            // 添加病毒
+            if (map[i][j]["virus"] != 0) {
+                let virusImg = $('<img>').attr('src', '/static/img/virus.png').attr('class', 'level'+map[i][j]["virus"]);
+                $("#" + i + "-" + j).children().eq(0).append(virusImg);
+            }
+            // 添加研究所
+            if (map[i][j]["institute"] != 0) {
+                let instituteImg = $('<img>').attr('src', '/static/img/cap1.png');
+                $("#" + i + "-" + j).children().eq(1).append(instituteImg);
+            }
+            // 添加玩家位置
+            $("#" + i + "-" + j).children().eq(2).text(map[i][j]["player"]);
+        }
+    }
+    // 更新玩家职业
+    let players = req["players"];
+    $.each(players, function(i, e) {
+        let name = $("#" + e["posx"] + "-" + e["posy"]).children().eq(2).text();
+        $("#" + e["posx"] + "-" + e["posy"]).children().eq(2).text(name + "(" + occupations[e["occupation"]] + ")");
+    });
 }
 // WebSocket处理函数
 var wsProcess = function () {
@@ -121,6 +175,10 @@ var wsProcess = function () {
             updateUsers(reqData["users"]);
         } else if (reqData["id"] !== undefined) { // 收到消息
             appendMessage(reqData);
+        } else if (reqData["running"] !== undefined) { // 开始、结束游戏
+            changeGameStatus(reqData["running"]);
+        } else if (reqData["map"] !== undefined) { // 处理地图信息
+            updateGame(reqData);
         } else {
             // 处理其他类型消息
         }
@@ -136,6 +194,13 @@ var wsProcess = function () {
     });
     $("#btn-send").on("click", function () {
         sendMessage(ws);
+    });
+    $("#btn-ready").on("click", function() {
+        if ($(this).text() == "准备") {
+            userChangeReady('ready');
+        } else {
+            userChangeReady('cancel');
+        }
     });
 };
 $(function () {
