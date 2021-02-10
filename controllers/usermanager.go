@@ -40,7 +40,8 @@ func loginUser(user models.User) (string, error) {
 	id := genId()
 	getUserManager().loginUsersMutex.Lock()
 	defer getUserManager().loginUsersMutex.Unlock()
-	getUserManager().loginUsers[id] = user.UserName
+	// getUserManager().loginUsers[id] = user.UserName
+	getUserManager().loginUsers[user.UserName] = id
 
 	return id, nil
 }
@@ -51,11 +52,11 @@ func genId() string {
 	return id
 }
 
-func deleteUser(id string) {
-	fmt.Println("delete:", id)
+func deleteUser(username string) {
+	fmt.Println("[deleteUser]delete:", username)
 	getUserManager().loginUsersMutex.Lock()
 	defer getUserManager().loginUsersMutex.Unlock()
-	delete(getUserManager().loginUsers, id)
+	delete(getUserManager().loginUsers, username)
 }
 
 func mapToSlice(m map[string]string) []string {

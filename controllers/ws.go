@@ -35,9 +35,9 @@ func (c *WebSocketController) Get() {
 }
 
 func sendServerInfo() {
-	// 每隔100ms向客户端广播服务器信息
+	// 每隔60ms向客户端广播服务器信息，如果发送信息失败，则客户端已断开连接，从活动websocket中删除
 	for {
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(time.Millisecond * 60)
 		// fmt.Println(getUserManager().loginUsers)
 		serverInfo := models.ServerInfo{Users: getUserManager().loginUsers}
 		//fmt.Println("send: ", serverInfo)
@@ -45,12 +45,13 @@ func sendServerInfo() {
 		for client := range getWebSocketManager().activeWebSockets {
 			err := client.WriteJSON(serverInfo)
 			if err != nil {
-				log.Printf("client.WriteJSON error: %v", err)
+				log.Printf("[sendServerInfo]client.WriteJSON error: %v", err)
+				deleteUser(getWebSocketManager().activeWebSockets[client])
+				deleteWebSocket(client)
 				err = client.Close()
 				if err != nil {
-					log.Printf("client.Close error: %v", err)
+					log.Printf("[sendServerInfo]client.Close error: %v", err)
 				}
-				deleteWebSocket(client)
 			}
 		}
 	}
@@ -67,39 +68,27 @@ func sendMessages() {
 		for client := range getWebSocketManager().activeWebSockets {
 			err := client.WriteJSON(message)
 			if err != nil {
-				log.Printf("client.WriteJSON error: %v", err)
-				err = client.Close()
-				if err != nil {
-					log.Printf("client.Close error: %v", err)
-				}
-				deleteWebSocket(client)
+				log.Printf("[sendMessages]client.WriteJSON error: %v", err)
 			}
 		}
 	}
 }
 
 func handleMessages(ws *websocket.Conn) {
-	fmt.Println("-------------------------------------")
 	for {
 		var clientMsg models.ClientMsg
 		err := ws.ReadJSON(&clientMsg)
 		if err != nil {
-			log.Printf("ws.ReadJSON error: %v", err)
-			// fmt.Println(getWebSocketManager().activeWebSockets)
-			// fmt.Println("", ws)
-			// deleteUser(getWebSocketManager().activeWebSockets[ws])
-			// deleteWebSocket(ws)
+			log.Printf("[handleMessages]ws.ReadJSON error: %v", err)
 			break
 		} else {
-			fmt.Println("receive msg:", clientMsg.Msg, clientMsg.Id)
+			fmt.Println("[handleMessages]receive msg:", clientMsg.Msg, clientMsg.UserName, clientMsg.Id)
 			if len(clientMsg.Msg) == 0 {
-				getWebSocketManager().activeWebSockets[ws] = clientMsg.Id
+				getWebSocketManager().activeWebSockets[ws] = clientMsg.UserName
 				continue
 			}
 			insertMessage(clientMsg)
 			serverInfoBroadcast <- clientMsg
 		}
 	}
-	deleteUser(getWebSocketManager().activeWebSockets[ws])
-	fmt.Println("-------------------------------------")
 }

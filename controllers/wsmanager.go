@@ -8,7 +8,7 @@ import (
 )
 
 type WebSocketManager struct {
-	// 键为WebSocket连接，值为用户id
+	// 键为WebSocket连接，值为用户名
 	activeWebSockets map[*websocket.Conn]string
 	messages         []models.ClientMsg
 	webSocketMutex   sync.Mutex

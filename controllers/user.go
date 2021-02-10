@@ -17,7 +17,7 @@ func (c *UserController) LoginUser() {
 	data := c.Ctx.Input.RequestBody
 	err := json.Unmarshal(data, &user)
 	if err != nil {
-		fmt.Println("json.Unmarshal is err:", err.Error())
+		fmt.Println("[LoginUser]json.Unmarshal is err:", err.Error())
 	}
 	fmt.Println(user)
 	// 用户登录
@@ -31,13 +31,13 @@ func (c *UserController) CheckUser() {
 	data := c.Ctx.Input.RequestBody
 	err := json.Unmarshal(data, &userCheck)
 	if err != nil {
-		fmt.Println("json.Unmarshal is err:", err.Error())
+		fmt.Println("[CheckUser]json.Unmarshal is err:", err.Error())
 	}
 	fmt.Println(userCheck)
 	getUserManager().loginUsersMutex.Lock()
 	defer getUserManager().loginUsersMutex.Unlock()
-	if username, ok := getUserManager().loginUsers[userCheck.Id]; ok {
-		if username == userCheck.Username {
+	if userId, ok := getUserManager().loginUsers[userCheck.Username]; ok {
+		if userId == userCheck.Id {
 			c.Ctx.WriteString("ok")
 			return
 		}

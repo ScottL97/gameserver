@@ -43,7 +43,7 @@
             let id = data;
             if (id != "") {
               setCookie("username", usernameInput, 1);
-              setCookie("token", id, 1);
+              setCookie("id", id, 1);
               $(window).attr("location", "/game");
             }
           }
