@@ -18,7 +18,8 @@
     <div>在线用户: <span id="player-num"></span></div>
     <div class="you">
       <p>姓名: <span id="username"></span></p>
-      <p>行动力: <span id="energy"></span></p>
+      <p>行动力: <span id="energy">0</span></p>
+      <p>疫苗研究进度：<span id="research">0</span>%</p>
       <!--<p>状态：<span id="status"></span></p>-->
       <div class="form-group">
         <input id="msg" type="text" class="form-control"/>
@@ -30,7 +31,7 @@
       </div>
     </div>
     <div id="your-toolbox" class="toolbox">
-      <h2>道具栏</h2>
+      <!--<h2>道具栏</h2>
       <div id="tools">
         <a class="toolicon" href="javascript:;"><img src="/static/img/weapon1.png" /></a>
         <a class="toolicon" href="javascript:;"><img src="/static/img/weapon2.png" /></a>
@@ -38,7 +39,9 @@
         <a class="toolicon" href="javascript:;"><img src="/static/img/weapon1.png" /></a>
         <a class="toolicon" href="javascript:;"><img src="/static/img/weapon2.png" /></a>
         <a class="toolicon" href="javascript:;"><img src="/static/img/weapon3.png" /></a>
-      </div>
+      </div>-->
+      <h2>行动</h2>
+      <div id="action"></div>
     </div>
     <div id="your-message" class="list-group"></div>
   </header>

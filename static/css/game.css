@@ -16,7 +16,7 @@
     flex-direction: column;
 }
 .square:hover {
-    background: lightgreen;
+    background: lightcoral;
 }
 .square p {
     margin: 0;

@@ -5,9 +5,17 @@ var myName = "";
 var myId = "";
 var myOccupation = "";
 var players = [];
+var mapInfo = {};
+var toDrive = "";
+var researchProgress = 0;
 // 点击准备/取消准备按钮后，按钮上显示的文字
 var readyChangeStatus = { 'ready': '取消准备', 'cancel': '准备' };
 var occupations = ["scientist", "engineer", "doctor", "driver"];
+var occupationsDetail = [
+    "可以在有研究所的格子内进行研究，每次消耗2行动力，进度+5%",
+    "可以在没有研究所的格子内建造研究所，每次消耗4行动力",
+    "消灭病毒消耗行动力为1，其他玩家为1+病毒等级",
+    "移动1格消耗0.5行动力，可以搭载1名在同一格的其他玩家到达另一位置，被搭载的玩家不消耗行动力"]
 var cmds = {
     ADD_VIRUS: 0, // 添加病毒
     SUB_VIRUS: 1,           // 清除病毒
@@ -133,6 +141,9 @@ var userFinish = function () {
     $.get("/gamectrl/finish/" + myName, function (data, status) {
         if (status == "success") {
             console.log("userFinish: ", data);
+            if (data == "warn") {
+                alert("请等待其他玩家结束回合...");
+            }
         }
     });
 };
@@ -170,7 +181,7 @@ var moveUser = function (square) {
         return;
     }
     // todo: 司机带人
-    let movInfo = { username: myName, posx: parseInt(tarx), posy: parseInt(tary), drive: "" };
+    let movInfo = { username: myName, posx: parseInt(tarx), posy: parseInt(tary), drive: toDrive };
     let reqData = JSON.stringify(movInfo);
     console.log("[moveUser]req:", reqData);
     $.post("/gamectrl/move", reqData, function (data, status) {
@@ -196,30 +207,31 @@ var getPlayerObj = function () {
 };
 var changePlayerPos = function (username, curx, cury, tarx, tary, energyNeed) {
     console.log("[changePlayerPos]username:", username);
-    // 目标格子可能有其他玩家，不能用text()，要用append()
-    let playerEle = $("span#player-" + username);
-    $("#" + curx + "-" + cury).children().eq(2).remove(playerEle);
-    $("#" + tarx + "-" + tary).children().eq(2).append(playerEle);
+    
     // 更新当前位置
-    $.each(players, function (i, e) {
-        // console.log("players e:", e, e["username"]);
-        if (e["username"] == username) {
-            e["posx"] = tarx;
-            e["posy"] = tary;
-            e["energy"] -= energyNeed;
-            // 修改当前能量显示
-            $("#energy").text(e["energy"]);
-        }
-    });
+    // $.each(players, function (i, e) {
+    //     // console.log("players e:", e, e["username"]);
+    //     if (e["username"] == username) {
+    //         e["posx"] = tarx;
+    //         e["posy"] = tary;
+    //         e["energy"] -= energyNeed;
+    //         // 修改当前能量显示
+    //         $("#energy").text(e["energy"]);
+    //     }
+    // });
 }
 // 更新游戏信息
 var updateGame = function (req) {
     console.log("updateGame:", req);
     // 更新回合数
     $("#gameround").text(" Round " + req["round"]);
+    // 更新当前研究进度
+    $("#research").text(req["progress"]);
     // 恢复显示“回合结束”按钮
     // $("#btn-finish").show();
     // $("#status").text("");
+    // 司机携带人置空
+    toDrive = "";
     // 先清空地图上的病毒、玩家和研究所（这里写的不太好）
     for (let i = 0; i < 7; i++) {
         for (let j = 0; j < 7; j++) {
@@ -231,16 +243,16 @@ var updateGame = function (req) {
         $("#player-" + e["username"]).remove();
     });
     // 更新地图显示
-    let map = req["map"];
+    mapInfo = req["map"];
     for (let i = 0; i < 7; i++) {
         for (let j = 0; j < 7; j++) {
             // 添加病毒
-            if (map[i][j]["virus"] != 0) {
-                let virusImg = $('<img>').attr('src', '/static/img/virus.png').attr('class', 'level' + map[i][j]["virus"]);
+            if (mapInfo[i][j]["virus"] != 0) {
+                let virusImg = $('<img>').attr('src', '/static/img/virus.png').attr('class', 'level' + mapInfo[i][j]["virus"]);
                 $("#" + i + "-" + j).children().eq(0).append(virusImg);
             }
             // 添加研究所
-            if (map[i][j]["institute"] != 0) {
+            if (mapInfo[i][j]["institute"] != 0) {
                 let instituteImg = $('<img>').attr('src', '/static/img/cap1.png');
                 $("#" + i + "-" + j).children().eq(1).append(instituteImg);
             }
@@ -251,32 +263,218 @@ var updateGame = function (req) {
     $.each(players, function (i, e) {
         if (e["username"] == myName) {
             myOccupation = occupations[e["occupation"]];
+            setCapability(e["occupation"]);
             $("#energy").text(e["energy"]);
         }
         let playerEle = $("<span>").text(e["username"] + "(" + occupations[e["occupation"]] + ")").attr("id", "player-" + e["username"]);
         $("#" + e["posx"] + "-" + e["posy"]).children().eq(2).append(playerEle);
     });
 }
+// 根据职业设置能力
+var setCapability = function(occupationNum) {
+    $("#action").text('');
+    $("#action").append($("<h2>").text(occupations[occupationNum]));
+    $("#action").append($("<p>").text(occupationsDetail[occupationNum]));
+    $("#action").append('<a class="toolicon" href="javascript:killVirus();"><img src="/static/img/weapon2.png" /></a>');
+    if (occupationNum == 0) { // 科学家
+        $("#action").append('<a class="toolicon" href="javascript:doResearch();"><img src="/static/img/weapon1.png" /></a>');
+    } else if (occupationNum == 1) { // 工程师
+        $("#action").append('<a class="toolicon" href="javascript:buildInstitute();"><img src="/static/img/weapon2.png" /></a>');
+    } else if (occupationNum == 2) { // 医生
+    } else if (occupationNum == 3) { // 司机
+        // $("#action").append('<a class="toolicon" href="javascript:drivePlayer();"><img src="/static/img/weapon2.png" /></a>');
+        $("#action").append('<a class="toolicon" href="javascript:;"><img src="/static/img/weapon2.png" /></a>');
+    }
+}
+// 清理病毒
+var killVirus = function() {
+    console.log("killVirus");
+    let player = getPlayerObj();
+    if (player == null) {
+        return;
+    }
+    let energy = 1.0;
+    if (occupations[player["occupation"]] != "doctor") {
+        energy = 1.0 + mapInfo[player["posx"]][player["posy"]]["virus"];
+    }
+    if (player["energy"] - energy < 0.0) {
+        alert("energy is not enough");
+        return;
+    }
+    let killVirusInfo = { username: myName, posx: parseInt(player["posx"]), posy: parseInt(player["posy"]) };
+    console.log(killVirusInfo);
+    let reqData = JSON.stringify(killVirusInfo);
+    $.post("/gamectrl/killvirus", reqData, function (data, status) {
+        if (status == "success") {
+            console.log("killVirus:", data);
+            if (data == "ok") {
+                cleanVirus(player["posx"], player["posy"], energy);
+            } else {
+                alert("清除病毒失败！");
+            }
+        }
+    });
+};
+var cleanVirus = function(posx, posy, energyNeed) {
+    $("#" + posx + "-" + posy).children().eq(0).empty();
+    // 修改用户能量
+    $.each(players, function (i, e) {
+        // console.log("players e:", e, e["username"]);
+        if (e["username"] == myName) {
+            e["energy"] -= energyNeed;
+            // 修改当前能量显示
+            $("#energy").text(e["energy"]);
+        }
+    });
+};
+// 职业能力
+var doResearch = function() {
+    console.log("doResearch");
+    let player = getPlayerObj();
+    if (player == null) {
+        return;
+    }
+    if (occupations[player["occupation"]] != "scientist") {
+        return;
+    }
+    if (player["energy"] - 2.0 < 0.0) {
+        alert("energy is not enough");
+        return;
+    }
+    if (mapInfo[player["posx"]][player["posy"]]["institute"] == 0) {
+        alert("there is not a institute here");
+        return;
+    }
+    let doResearchInfo = { username: myName, posx: parseInt(player["posx"]), posy: parseInt(player["posy"]) };
+    console.log(doResearchInfo);
+    let reqData = JSON.stringify(doResearchInfo);
+    $.post("/gamectrl/doresearch", reqData, function (data, status) {
+        if (status == "success") {
+            console.log("doResearch:", data);
+            if (data == "ok") {
+                addResearch(5, 2.0);
+            } else {
+                alert("研究疫苗失败！");
+            }
+        }
+    });
+};
+var addResearch =  function(num, energyNeed) {
+    researchProgress += num;
+    $("#research").text(researchProgress);
+    // 修改用户能量
+    $.each(players, function (i, e) {
+        // console.log("players e:", e, e["username"]);
+        if (e["username"] == myName) {
+            e["energy"] -= energyNeed;
+            // 修改当前能量显示
+            $("#energy").text(e["energy"]);
+        }
+    });
+};
+var buildInstitute = function() {
+    console.log("buildInstitute");
+    let player = getPlayerObj();
+    if (player == null) {
+        return;
+    }
+    if (occupations[player["occupation"]] != "engineer") {
+        return;
+    }
+    if (player["energy"] - 4.0 < 0.0) {
+        alert("energy is not enough");
+        return;
+    }
+    if (mapInfo[player["posx"]][player["posy"]]["institute"] == 1) {
+        alert("there is a institute here");
+        return;
+    }
+    let buildInstituteInfo = { username: myName, posx: parseInt(player["posx"]), posy: parseInt(player["posy"]) };
+    console.log(buildInstituteInfo);
+    let reqData = JSON.stringify(buildInstituteInfo);
+    $.post("/gamectrl/buildinstitute", reqData, function (data, status) {
+        if (status == "success") {
+            console.log("buildinstitute:", data);
+            if (data == "ok") {
+                createInstitute(player["posx"], player["posy"], 4.0);
+            } else {
+                alert("建造研究所失败！");
+            }
+        }
+    });
+};
+var createInstitute = function(posx, posy, energyNeed) {
+    // 修改用户能量
+    $.each(players, function (i, e) {
+        // console.log("players e:", e, e["username"]);
+        if (e["username"] == myName) {
+            e["energy"] -= energyNeed;
+            // 修改当前能量显示
+            $("#energy").text(e["energy"]);
+        }
+    });
+};
+var drivePlayer = function() {
+    console.log("drivePlayer");
+    let player = getPlayerObj();
+    if (player == null) {
+        return;
+    }
+    if (occupations[player["occupation"]] != "driver") {
+        return;
+    }
+    if (toDrive != "") {
+        toDrive = "";
+        alert("放下" + toDrive + "成功！");
+        return;
+    }
+    // todo: 选择一个玩家搭载
+    $.each(players, function (i, e) {
+        // console.log("players e:", e, e["username"]);
+        if ((e["posx"] == player["posx"]) && (e["posy"] == player["posy"]) && (e["username"] != myName)) {
+            toDrive = e["username"];
+        }
+    });
+    if (toDrive != "") {
+        alert("搭载" + toDrive + "成功！");
+        return;
+    }
+    alert("相同格子内没有其他玩家");
+};
 // 处理游戏指令
 var processCmd = function (req) {
     switch (req["type"]) {
         case cmds.MOV_PLAYER: {
-            if (req["username"] !== myName) {
-                let playerEle = $("#player-" + req["username"]);
-                playerEle.remove();
-                let playerP = $("<p>");
-                playerP.append(playerEle);
-                $("#" + req["posx"] + "-" + req["posy"]).append(playerP);
-                // 更新玩家信息
-                $.each(players, function (i, e) {
-                    // console.log("players e:", e, e["username"]);
-                    if (e["username"] == req["username"]) {
-                        e["posx"] = req["posx"];
-                        e["posy"] = req["posy"];
-                        e["energy"] -= req["energy"];
-                    }
-                });
-            }
+            // 目标格子可能有其他玩家，不能用text()，要用append()
+            // let playerEle = $("span#player-" + username);
+            // $("#" + curx + "-" + cury).children().eq(2).remove(playerEle);
+            // $("#" + tarx + "-" + tary).children().eq(2).append(playerEle);
+            let playerEle = $("#player-" + req["username"]);
+            playerEle.remove();
+            $("#" + req["posx"] + "-" + req["posy"]).children().eq(2).append(playerEle);
+            // 更新玩家信息
+            $.each(players, function (i, e) {
+                // console.log("players e:", e, e["username"]);
+                if (e["username"] == req["username"]) {
+                    e["posx"] = req["posx"];
+                    e["posy"] = req["posy"];
+                    e["energy"] -= req["energy"];
+                    // 修改当前能量显示
+                    $("#energy").text(e["energy"]);
+                }
+            });
+        }break;
+        case cmds.SUB_VIRUS: {
+            $("#" + req["posx"] + "-" + req["posy"]).children().eq(0).empty();
+            mapInfo[req["posx"]][req["posy"]]["virus"] = 0;
+        }break;
+        case cmds.ADD_INSTITUE: {
+            let instituteImg = $('<img>').attr('src', '/static/img/cap1.png');
+            $("#" + req["posx"] + "-" + req["posy"]).children().eq(1).append(instituteImg);
+            mapInfo[req["posx"]][req["posy"]]["institute"] = 1;
+        }break;
+        case cmds.DO_RESEARCH: {
+            $("#research").text(req["progress"]);
         }break;
         default: {
             console.log("wrong cmd:", req["type"]);

@@ -1,9 +1,10 @@
 package models
 
 type GameInfo struct {
-	Map     [7][7]Square `json:"map"`
-	Players []Player     `json:"players"`
-	Round   int          `json:"round"`
+	Map      [7][7]Square `json:"map"`
+	Players  []Player     `json:"players"`
+	Round    int          `json:"round"`
+	Progress int          `json:"progress"`
 }
 
 type Square struct {
@@ -30,10 +31,40 @@ const (
 	DO_RESEARCH         // 进行研究，科学家可以进行
 )
 
-// ws服务器->客户端，前端根据type为0还是1确定是添加还是清除病毒
-type AddVirusWSReq struct {
-	Type int       `json:"type"`
-	Map  [7][7]int `json:"map"` // 0代表没有，1-3代表3个级别的病毒
+// http客户端->服务器，清除病毒
+type KillVirusReq struct {
+	Username string `json:"username"`
+	PosX     int    `json:"posx"`
+	PosY     int    `json:"posy"`
+}
+
+// ws服务器->客户端，同步清除病毒
+type KillVirusWSReq struct {
+	Type int `json:"type"`
+	PosX int `json:"posx"`
+	PosY int `json:"posy"`
+}
+
+type BuildInstituteReq struct {
+	Username string `json:"username"`
+	PosX     int    `json:"posx"`
+	PosY     int    `json:"posy"`
+}
+
+type BuildInstituteWSReq struct {
+	Type int `json:"type"`
+	PosX int `json:"posx"`
+	PosY int `json:"posy"`
+}
+
+type DoResearchReq struct {
+	Username string `json:"username"`
+	PosX     int    `json:"posx"`
+	PosY     int    `json:"posy"`
+}
+type DoResearchWSReq struct {
+	Type     int `json:"type"`
+	Progress int `json:"progress"`
 }
 
 // http客户端->服务器，客户端检查路径可行后才能请求，服务器返回路径是否改变成功

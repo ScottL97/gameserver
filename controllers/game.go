@@ -24,6 +24,7 @@ type Game struct {
 	Round        int
 	FinishNum    int
 	VirusNum     int
+	Progress     int
 }
 
 func getGame() *Game {
@@ -123,10 +124,11 @@ func (c *GameController) UserCancel() {
 	}
 	deletePlayer(usernameParam)
 	c.Ctx.WriteString("ok")
-	if len(getGame().Players) < PLAYER_NUM {
-		sendGameStatus(1)
-		stopGame()
-	}
+	// 上面游戏正在进行中不允许取消准备，所以这里会出问题
+	// if len(getGame().Players) < PLAYER_NUM {
+	// 	sendGameStatus(1)
+	// 	stopGame()
+	// }
 }
 
 func insertPlayer(player models.Player) {
@@ -273,6 +275,115 @@ func getEnergyNeed(curx, cury, tarx, tary, occupation int) (float32, error) {
 	return energy, nil
 }
 
+func (c *GameController) KillVirus() {
+	var req models.KillVirusReq
+	data := c.Ctx.Input.RequestBody
+	err := json.Unmarshal(data, &req)
+	if err != nil {
+		fmt.Println("[KillVirus]json.Unmarshal is err:", err.Error())
+		c.Ctx.WriteString("fail")
+		return
+	}
+	player, err := getPlayer(req.Username)
+	if err != nil {
+		fmt.Printf("[KillVirus]%s is not in Players\n", req.Username)
+		c.Ctx.WriteString("fail")
+		return
+	}
+	var energyNeed float32
+	if player.Occupation == DOCTOR {
+		energyNeed = 1.0
+	} else {
+		energyNeed = float32(getGame().Squares[player.PosX][player.PosY].Virus) + 1.0
+	}
+	if player.Energy-energyNeed < 0.0 {
+		fmt.Printf("[KillVirus]%s energy is not enough\n", req.Username)
+		c.Ctx.WriteString("fail")
+		return
+	}
+	getGame().Squares[player.PosX][player.PosY].Virus = 0
+	player.Energy -= energyNeed
+	killReq := models.KillVirusWSReq{Type: models.SUB_VIRUS, PosX: req.PosX, PosY: req.PosY}
+	err = sendJSON(killReq)
+	if err != nil {
+		fmt.Println("[KillVirus]sendJSON fail")
+	}
+
+	c.Ctx.WriteString("ok")
+}
+
+func (c *GameController) BuildInstitute() {
+	var req models.BuildInstituteReq
+	data := c.Ctx.Input.RequestBody
+	err := json.Unmarshal(data, &req)
+	if err != nil {
+		fmt.Println("[BuildInstitute]json.Unmarshal is err:", err.Error())
+		c.Ctx.WriteString("fail")
+		return
+	}
+	player, err := getPlayer(req.Username)
+	if err != nil {
+		fmt.Printf("[BuildInstitute]%s is not in Players\n", req.Username)
+		c.Ctx.WriteString("fail")
+		return
+	}
+	if player.Occupation != ENGINEER {
+		fmt.Printf("[BuildInstitute]%s is not an engineer\n", req.Username)
+		c.Ctx.WriteString("fail")
+		return
+	}
+	if player.Energy-4.0 < 0.0 {
+		fmt.Printf("[BuildInstitute]%s energy is not enough\n", req.Username)
+		c.Ctx.WriteString("fail")
+		return
+	}
+	player.Energy -= 4.0
+	getGame().Squares[player.PosX][player.PosY].Institute = 1
+	buildReq := models.BuildInstituteWSReq{Type: models.ADD_INSTITUE, PosX: req.PosX, PosY: req.PosY}
+	err = sendJSON(buildReq)
+	if err != nil {
+		fmt.Println("[BuildInstitute]sendJSON fail")
+	}
+
+	c.Ctx.WriteString("ok")
+}
+
+func (c *GameController) DoResearch() {
+	var req models.DoResearchReq
+	data := c.Ctx.Input.RequestBody
+	err := json.Unmarshal(data, &req)
+	if err != nil {
+		fmt.Println("[DoResearch]json.Unmarshal is err:", err.Error())
+		c.Ctx.WriteString("fail")
+		return
+	}
+	player, err := getPlayer(req.Username)
+	if err != nil {
+		fmt.Printf("[DoResearch]%s is not in Players\n", req.Username)
+		c.Ctx.WriteString("fail")
+		return
+	}
+	if player.Occupation != SCIENTIST {
+		fmt.Printf("[DoResearch]%s is not an scientist\n", req.Username)
+		c.Ctx.WriteString("fail")
+		return
+	}
+	if player.Energy-2.0 < 0.0 {
+		fmt.Printf("[DoResearch]%s energy is not enough\n", req.Username)
+		c.Ctx.WriteString("fail")
+		return
+	}
+	player.Energy -= 2.0
+	getGame().Progress += 5
+	researchReq := models.DoResearchWSReq{Type: models.DO_RESEARCH, Progress: getGame().Progress}
+	err = sendJSON(researchReq)
+	if err != nil {
+		fmt.Println("[BuildInstitute]sendJSON fail")
+	}
+
+	c.Ctx.WriteString("ok")
+}
+
 // 玩家准备完成，初始化游戏，向玩家广播游戏初始化信息
 func GameInit() {
 	getGame().Status = RUNNING
@@ -377,7 +488,8 @@ func sendGameInfo() {
 		if status == 1 {
 			return
 		}
-		gameInfo := models.GameInfo{Map: getGame().Squares, Players: getGame().Players, Round: getGame().Round}
+		gameInfo := models.GameInfo{Map: getGame().Squares, Players: getGame().Players,
+			Round: getGame().Round, Progress: getGame().Progress}
 		err := sendJSON(gameInfo)
 		if err != nil {
 			fmt.Println("[sendGameInfo]sendJSON fail")
