@@ -217,6 +217,7 @@ func (c *GameController) UserMove() {
 	}
 	movPlayer(req.Username, req.PosX, req.PosY, energyNeed)
 	movReq := models.MovPlayerWSReq{Type: models.MOV_PLAYER, Username: req.Username, PosX: req.PosX, PosY: req.PosY, Energy: energyNeed}
+	fmt.Println("UserMove:", movReq)
 	err = sendJSON(movReq)
 	if err != nil {
 		fmt.Println("[UserMove]sendJSON fail")

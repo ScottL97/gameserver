@@ -188,7 +188,8 @@ var moveUser = function (square) {
         if (status == "success") {
             console.log("moveUser:", data);
             if (data == "ok") {
-                changePlayerPos(myName, player["posx"], player["posy"], tarx, tary, energy);
+                // 向所有人广播
+                // changePlayerPos(myName, player["posx"], player["posy"], tarx, tary, energy);
             } else {
                 alert("无法到达！");
             }
@@ -205,21 +206,20 @@ var getPlayerObj = function () {
     });
     return playerObj;
 };
-var changePlayerPos = function (username, curx, cury, tarx, tary, energyNeed) {
-    console.log("[changePlayerPos]username:", username);
+// var changePlayerPos = function (username, curx, cury, tarx, tary, energyNeed) {
+//     console.log("[changePlayerPos]username:", username);
     
-    // 更新当前位置
-    // $.each(players, function (i, e) {
-    //     // console.log("players e:", e, e["username"]);
-    //     if (e["username"] == username) {
-    //         e["posx"] = tarx;
-    //         e["posy"] = tary;
-    //         e["energy"] -= energyNeed;
-    //         // 修改当前能量显示
-    //         $("#energy").text(e["energy"]);
-    //     }
-    // });
-}
+//     // 更新当前位置和能量
+//     $.each(players, function (i, e) {
+//         if (e["username"] == username) {
+//             e["posx"] = tarx;
+//             e["posy"] = tary;
+//             e["energy"] -= energyNeed;
+//             // 修改当前能量显示
+//             $("#energy").text(e["energy"]);
+//         }
+//     });
+// }
 // 更新游戏信息
 var updateGame = function (req) {
     console.log("updateGame:", req);
@@ -282,8 +282,7 @@ var setCapability = function(occupationNum) {
         $("#action").append('<a class="toolicon" href="javascript:buildInstitute();"><img src="/static/img/weapon2.png" /></a>');
     } else if (occupationNum == 2) { // 医生
     } else if (occupationNum == 3) { // 司机
-        // $("#action").append('<a class="toolicon" href="javascript:drivePlayer();"><img src="/static/img/weapon2.png" /></a>');
-        $("#action").append('<a class="toolicon" href="javascript:;"><img src="/static/img/weapon2.png" /></a>');
+        $("#action").append('<a class="toolicon" href="javascript:drivePlayer();"><img src="/static/img/weapon2.png" /></a>');
     }
 }
 // 清理病毒
@@ -291,6 +290,10 @@ var killVirus = function() {
     console.log("killVirus");
     let player = getPlayerObj();
     if (player == null) {
+        return;
+    }
+    if (mapInfo[player["posx"]][player["posy"]]["virus"] == 0) {
+        alert("相同格子内没有病毒");
         return;
     }
     let energy = 1.0;
@@ -446,9 +449,6 @@ var processCmd = function (req) {
     switch (req["type"]) {
         case cmds.MOV_PLAYER: {
             // 目标格子可能有其他玩家，不能用text()，要用append()
-            // let playerEle = $("span#player-" + username);
-            // $("#" + curx + "-" + cury).children().eq(2).remove(playerEle);
-            // $("#" + tarx + "-" + tary).children().eq(2).append(playerEle);
             let playerEle = $("#player-" + req["username"]);
             playerEle.remove();
             $("#" + req["posx"] + "-" + req["posy"]).children().eq(2).append(playerEle);
@@ -459,8 +459,10 @@ var processCmd = function (req) {
                     e["posx"] = req["posx"];
                     e["posy"] = req["posy"];
                     e["energy"] -= req["energy"];
-                    // 修改当前能量显示
-                    $("#energy").text(e["energy"]);
+                    if (req["username"] == myName) {
+                        // 修改当前能量显示
+                        $("#energy").text(e["energy"]);
+                    }
                 }
             });
         }break;
