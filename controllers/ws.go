@@ -41,12 +41,18 @@ func sendServerInfo() {
 		// fmt.Println(getUserManager().loginUsers)
 		serverInfo := models.ServerInfo{Users: getUserManager().loginUsers}
 		//fmt.Println("send: ", serverInfo)
-
 		for client := range getWebSocketManager().activeWebSockets {
+			getWebSocketManager().webSocketMutex.Lock()
 			err := client.WriteJSON(serverInfo)
+			getWebSocketManager().webSocketMutex.Unlock()
 			if err != nil {
 				log.Printf("[sendServerInfo]client.WriteJSON error: %v", err)
 				deleteUser(getWebSocketManager().activeWebSockets[client])
+				deletePlayer(getWebSocketManager().activeWebSockets[client])
+				if len(getGame().Players) < 1 {
+					stopGame()
+					sendGameStatus(1)
+				}
 				deleteWebSocket(client)
 				err = client.Close()
 				if err != nil {
@@ -58,20 +64,33 @@ func sendServerInfo() {
 }
 
 func sendMessages() {
-	// 当消息不为空时，向客户端发送信息
+	// 当有消息时，向客户端发送websocket消息
 	for {
 		message := <-serverInfoBroadcast
-		// messages := getWebSocketManager().messages
-		// cleanMessage()
 		fmt.Println("send: ", message)
+		err := sendJSON(message)
+		if err != nil {
+			log.Printf("[sendMessages]sendJSON error: %v", err)
+		}
+	}
+}
 
-		for client := range getWebSocketManager().activeWebSockets {
-			err := client.WriteJSON(message)
-			if err != nil {
-				log.Printf("[sendMessages]client.WriteJSON error: %v", err)
+func sendJSON(i interface{}) error {
+	switch t := i.(type) {
+	default:
+		{
+			fmt.Printf("type %T", t)
+			for client := range getWebSocketManager().activeWebSockets {
+				getWebSocketManager().webSocketMutex.Lock()
+				err := client.WriteJSON(i)
+				getWebSocketManager().webSocketMutex.Unlock()
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
+	return nil
 }
 
 func handleMessages(ws *websocket.Conn) {

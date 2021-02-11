@@ -24,4 +24,5 @@ type ClientMsg struct {
 
 type StatusReq struct {
 	Running string `json:"running"`
+	Message string `json:"message"` // 游戏胜利/失败
 }

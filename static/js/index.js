@@ -3,9 +3,19 @@
 var ids = new Map();
 var myName = "";
 var myId = "";
+var myOccupation = "";
+var players = [];
 // 点击准备/取消准备按钮后，按钮上显示的文字
-var readyChangeStatus = {'ready': '取消准备', 'cancel': '准备'};
+var readyChangeStatus = { 'ready': '取消准备', 'cancel': '准备' };
 var occupations = ["scientist", "engineer", "doctor", "driver"];
+var cmds = {
+    ADD_VIRUS: 0, // 添加病毒
+    SUB_VIRUS: 1,           // 清除病毒
+    MOV_PLAYER: 2,          // 移动玩家
+    SUB_PLAYER: 3,          // 删除玩家，如断开连接时执行
+    ADD_INSTITUE: 4,        // 建造研究所，工程师可以执行
+    DO_RESEARCH: 5         // 进行研究，科学家可以进行
+}
 // 发送消息文本框中的内容
 var sendMessage = function (ws) {
     let msg = $("#msg").val();
@@ -24,11 +34,11 @@ var sendMessage = function (ws) {
 };
 // 刷新玩家信息
 // 参数：{"name1": "uuid1", "name2": "uuid2", ...}
-var updateUsers = function(users) {
+var updateUsers = function (users) {
     // console.log(users);
     // 将参数的键/值对调，因为uuid是唯一的，但用户名可能与已有id冲突
     let newIds = {};
-    $.each(users, function(i, e) {
+    $.each(users, function (i, e) {
         newIds[e] = i;
     });
     let userNum = Object.keys(newIds).length;
@@ -65,7 +75,7 @@ var updateUsers = function(users) {
     }
 };
 // 添加其他用户的消息
-var appendMessage = function(req) {
+var appendMessage = function (req) {
     if (req["id"] === myId) {
         return;
     }
@@ -79,7 +89,7 @@ var appendMessage = function(req) {
     }
 };
 // 定时向服务器发送POST请求进行身份信息校验
-var checkUser = function(callback) {
+var checkUser = function (callback) {
     // callback函数只执行一次，之后如果身份校验成功什么都不做，校验失败直接返回
     let userInfo = { username: myName, id: myId };
     let reqData = JSON.stringify(userInfo);
@@ -94,7 +104,7 @@ var checkUser = function(callback) {
         }
     });
     // 定时校验id和name，解决多开窗口后，原窗口“假在线”问题
-    window.setInterval(function() {
+    window.setInterval(function () {
         $.post('/checkuser', reqData, function (data, status) {
             if (status == "success") {
                 // console.log("checkuser:", data);
@@ -106,9 +116,10 @@ var checkUser = function(callback) {
     }, 1000);
 };
 // 玩家准备/取消准备
-var userChangeReady = function(action) {
-    $.get("/gamectrl/" + action + "/" + myName, function(data, status) {
+var userChangeReady = function (action) {
+    $.get("/gamectrl/" + action + "/" + myName, function (data, status) {
         if (status == "success") {
+            console.log("userChangeReady: ", data);
             if (data == "ok") {
                 $("#btn-ready").text(readyChangeStatus[action]);
             } else {
@@ -117,27 +128,115 @@ var userChangeReady = function(action) {
         }
     });
 };
+// 玩家回合结束
+var userFinish = function () {
+    $.get("/gamectrl/finish/" + myName, function (data, status) {
+        if (status == "success") {
+            console.log("userFinish: ", data);
+        }
+    });
+};
 // 游戏开始、结束
-var changeGameStatus = function(running) {
-    console.log(running);
-    if (running == "yes") {
+var changeGameStatus = function (req) {
+    if (req["running"] == "yes") {
         $("#game").show(1000);
     } else {
         $("#game").hide(1000);
+        $("#btn-ready").text("准备");
+        if (req["message"] == "win") {
+            alert("you win!");
+        } else {
+            alert("you lose!");
+        }
     }
 };
+// 点击格子后，检查路径是否可行，向服务器请求移动
+var moveUser = function (square) {
+    // console.log($(square).attr('id'));
+    let player = getPlayerObj();
+    console.log("[moveUser]player: ", player);
+    if (player == null) {
+        return;
+    }
+    let pos = $(square).attr('id').split('-');
+    let tarx = pos[0];
+    let tary = pos[1];
+    let energy = Math.abs(player["posx"] - tarx) + Math.abs(player["posy"] - tary);
+    if (occupations[player["occupation"]] == 'driver') {
+        energy /= 2.0
+    }
+    if (player["energy"] - energy < 0.0) {
+        console.log("energy is not enough");
+        return;
+    }
+    // todo: 司机带人
+    let movInfo = { username: myName, posx: parseInt(tarx), posy: parseInt(tary), drive: "" };
+    let reqData = JSON.stringify(movInfo);
+    console.log("[moveUser]req:", reqData);
+    $.post("/gamectrl/move", reqData, function (data, status) {
+        if (status == "success") {
+            console.log("moveUser:", data);
+            if (data == "ok") {
+                changePlayerPos(myName, player["posx"], player["posy"], tarx, tary, energy);
+            } else {
+                alert("无法到达！");
+            }
+        }
+    });
+};
+var getPlayerObj = function () {
+    let playerObj = null;
+    $.each(players, function (i, e) {
+        // console.log("players e:", e, e["username"]);
+        if (e["username"] == myName) {
+            playerObj = e;
+        }
+    });
+    return playerObj;
+};
+var changePlayerPos = function (username, curx, cury, tarx, tary, energyNeed) {
+    console.log("[changePlayerPos]username:", username);
+    // 目标格子可能有其他玩家，不能用text()，要用append()
+    let playerEle = $("span#player-" + username);
+    $("#" + curx + "-" + cury).children().eq(2).remove(playerEle);
+    $("#" + tarx + "-" + tary).children().eq(2).append(playerEle);
+    // 更新当前位置
+    $.each(players, function (i, e) {
+        // console.log("players e:", e, e["username"]);
+        if (e["username"] == username) {
+            e["posx"] = tarx;
+            e["posy"] = tary;
+            e["energy"] -= energyNeed;
+            // 修改当前能量显示
+            $("#energy").text(e["energy"]);
+        }
+    });
+}
 // 更新游戏信息
-var updateGame = function(req) {
-    console.log(req);
+var updateGame = function (req) {
+    console.log("updateGame:", req);
     // 更新回合数
     $("#gameround").text(" Round " + req["round"]);
+    // 恢复显示“回合结束”按钮
+    // $("#btn-finish").show();
+    // $("#status").text("");
+    // 先清空地图上的病毒、玩家和研究所（这里写的不太好）
+    for (let i = 0; i < 7; i++) {
+        for (let j = 0; j < 7; j++) {
+            $("#" + i + "-" + j).children().eq(0).empty();
+            $("#" + i + "-" + j).children().eq(1).empty();
+        }
+    }
+    $.each(players, function (i, e) {
+        $("#player-" + e["username"]).remove();
+    });
     // 更新地图显示
     let map = req["map"];
     for (let i = 0; i < 7; i++) {
         for (let j = 0; j < 7; j++) {
             // 添加病毒
             if (map[i][j]["virus"] != 0) {
-                let virusImg = $('<img>').attr('src', '/static/img/virus.png').attr('class', 'level'+map[i][j]["virus"]);
+                let virusImg = $('<img>').attr('src', '/static/img/virus.png').attr('class', 'level' + map[i][j]["virus"]);
                 $("#" + i + "-" + j).children().eq(0).append(virusImg);
             }
             // 添加研究所
@@ -145,16 +244,44 @@ var updateGame = function(req) {
                 let instituteImg = $('<img>').attr('src', '/static/img/cap1.png');
                 $("#" + i + "-" + j).children().eq(1).append(instituteImg);
             }
-            // 添加玩家位置
-            $("#" + i + "-" + j).children().eq(2).text(map[i][j]["player"]);
         }
     }
-    // 更新玩家职业
-    let players = req["players"];
-    $.each(players, function(i, e) {
-        let name = $("#" + e["posx"] + "-" + e["posy"]).children().eq(2).text();
-        $("#" + e["posx"] + "-" + e["posy"]).children().eq(2).text(name + "(" + occupations[e["occupation"]] + ")");
+    // 更新玩家位置和职业，放在players全局变量中
+    players = req["players"];
+    $.each(players, function (i, e) {
+        if (e["username"] == myName) {
+            myOccupation = occupations[e["occupation"]];
+            $("#energy").text(e["energy"]);
+        }
+        let playerEle = $("<span>").text(e["username"] + "(" + occupations[e["occupation"]] + ")").attr("id", "player-" + e["username"]);
+        $("#" + e["posx"] + "-" + e["posy"]).children().eq(2).append(playerEle);
     });
+}
+// 处理游戏指令
+var processCmd = function (req) {
+    switch (req["type"]) {
+        case cmds.MOV_PLAYER: {
+            if (req["username"] !== myName) {
+                let playerEle = $("#player-" + req["username"]);
+                playerEle.remove();
+                let playerP = $("<p>");
+                playerP.append(playerEle);
+                $("#" + req["posx"] + "-" + req["posy"]).append(playerP);
+                // 更新玩家信息
+                $.each(players, function (i, e) {
+                    // console.log("players e:", e, e["username"]);
+                    if (e["username"] == req["username"]) {
+                        e["posx"] = req["posx"];
+                        e["posy"] = req["posy"];
+                        e["energy"] -= req["energy"];
+                    }
+                });
+            }
+        }break;
+        default: {
+            console.log("wrong cmd:", req["type"]);
+        }
+    }
 }
 // WebSocket处理函数
 var wsProcess = function () {
@@ -170,15 +297,18 @@ var wsProcess = function () {
     ws.onmessage = function (e) {
         // console.log(e.data);
         // todo: e.data类型判断
+        // todo: 回合结束的同步
         let reqData = JSON.parse(e.data);
         if (reqData["users"] !== undefined) { // 收到服务器定时发送的用户信息等
             updateUsers(reqData["users"]);
         } else if (reqData["id"] !== undefined) { // 收到消息
             appendMessage(reqData);
         } else if (reqData["running"] !== undefined) { // 开始、结束游戏
-            changeGameStatus(reqData["running"]);
+            changeGameStatus(reqData);
         } else if (reqData["map"] !== undefined) { // 处理地图信息
             updateGame(reqData);
+        } else if (reqData["type"] !== undefined) { // 处理游戏指令
+            processCmd(reqData);
         } else {
             // 处理其他类型消息
         }
@@ -195,12 +325,18 @@ var wsProcess = function () {
     $("#btn-send").on("click", function () {
         sendMessage(ws);
     });
-    $("#btn-ready").on("click", function() {
+    $("#btn-ready").on("click", function () {
         if ($(this).text() == "准备") {
             userChangeReady('ready');
         } else {
             userChangeReady('cancel');
         }
+    });
+    $("#btn-finish").on("click", function() {
+        userFinish();
+    });
+    $(".square").on("click", function () {
+        moveUser(this);
     });
 };
 $(function () {

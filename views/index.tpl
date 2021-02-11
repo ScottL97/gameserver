@@ -18,11 +18,14 @@
     <div>在线用户: <span id="player-num"></span></div>
     <div class="you">
       <p>姓名: <span id="username"></span></p>
+      <p>行动力: <span id="energy"></span></p>
+      <!--<p>状态：<span id="status"></span></p>-->
       <div class="form-group">
         <input id="msg" type="text" class="form-control"/>
       </div>
       <div class="text-right">
         <button id="btn-ready" class="btn btn-info">准备</button>
+        <button id="btn-finish" class="btn btn-info">回合结束</button>
         <button id="btn-send" class="btn btn-info">发送</button>
       </div>
     </div>

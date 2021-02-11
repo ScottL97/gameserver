@@ -13,6 +13,8 @@ func init() {
 	beego.Router("/checkuser", &controllers.UserController{}, "post:CheckUser")
 	beego.Router("/gamectrl/ready/:username", &controllers.GameController{}, "get:UserReady")
 	beego.Router("/gamectrl/cancel/:username", &controllers.GameController{}, "get:UserCancel")
+	beego.Router("/gamectrl/finish/:username", &controllers.GameController{}, "get:UserFinish")
+	beego.Router("/gamectrl/move", &controllers.GameController{}, "post:UserMove")
 	beego.Router("/", &controllers.UserController{}, "get:Get")
 	beego.SetStaticPath("/node_modules", "node_modules")
 }
