@@ -67,7 +67,7 @@ func sendMessages() {
 	// 当有消息时，向客户端发送websocket消息
 	for {
 		message := <-serverInfoBroadcast
-		fmt.Println("send: ", message)
+		// fmt.Println("send: ", message)
 		err := sendJSON(message)
 		if err != nil {
 			log.Printf("[sendMessages]sendJSON error: %v", err)
@@ -76,20 +76,20 @@ func sendMessages() {
 }
 
 func sendJSON(i interface{}) error {
-	switch t := i.(type) {
-	default:
-		{
-			fmt.Printf("type %T", t)
-			for client := range getWebSocketManager().activeWebSockets {
-				getWebSocketManager().webSocketMutex.Lock()
-				err := client.WriteJSON(i)
-				getWebSocketManager().webSocketMutex.Unlock()
-				if err != nil {
-					return err
-				}
-			}
+	// switch t := i.(type) {
+	// default:
+	// 	{
+	// 		fmt.Printf("type %T", t)
+	for client := range getWebSocketManager().activeWebSockets {
+		getWebSocketManager().webSocketMutex.Lock()
+		err := client.WriteJSON(i)
+		getWebSocketManager().webSocketMutex.Unlock()
+		if err != nil {
+			return err
 		}
 	}
+	// 	}
+	// }
 	return nil
 }
 

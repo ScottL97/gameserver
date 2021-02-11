@@ -19,7 +19,7 @@ func (c *UserController) LoginUser() {
 	if err != nil {
 		fmt.Println("[LoginUser]json.Unmarshal is err:", err.Error())
 	}
-	fmt.Println(user)
+	fmt.Println("LoginUser:", user)
 	// 用户登录
 	id, err := loginUser(user)
 
@@ -33,7 +33,7 @@ func (c *UserController) CheckUser() {
 	if err != nil {
 		fmt.Println("[CheckUser]json.Unmarshal is err:", err.Error())
 	}
-	fmt.Println(userCheck)
+	// fmt.Println(userCheck)
 	getUserManager().loginUsersMutex.Lock()
 	defer getUserManager().loginUsersMutex.Unlock()
 	if userId, ok := getUserManager().loginUsers[userCheck.Username]; ok {
