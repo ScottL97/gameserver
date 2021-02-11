@@ -15,6 +15,11 @@
 <body>
   <header>
     <h1>server</h1>
+    <audio controls="controls" autoplay="autoplay">
+      <source src="/static/music/Alpha.mp3" type="audio/ogg" />
+      <source src="/static/music/Alpha.mp3" type="audio/mpeg" />
+    Your browser does not support the audio element.
+    </audio>
     <div>在线用户: <span id="player-num"></span></div>
     <div class="you">
       <p>姓名: <span id="username"></span></p>
