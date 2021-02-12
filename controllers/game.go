@@ -41,13 +41,10 @@ func init() {
 		virus1Num[i] = 5
 	}
 	for i := 10; i < 20; i++ {
-		virus1Num[i] = 6
-		virus2Num[i] = i - 10
+		virus2Num[i] = 6
 	}
 	for i := 20; i < 30; i++ {
-		virus1Num[i] = 7
-		virus2Num[i] = i - 20
-		virus3Num[i] = i - 20
+		virus3Num[i] = 7
 	}
 }
 
@@ -124,11 +121,6 @@ func (c *GameController) UserCancel() {
 	}
 	deletePlayer(usernameParam)
 	c.Ctx.WriteString("ok")
-	// 上面游戏正在进行中不允许取消准备，所以这里会出问题
-	// if len(getGame().Players) < PLAYER_NUM {
-	// 	sendGameStatus(1)
-	// 	stopGame()
-	// }
 }
 
 func insertPlayer(player models.Player) {
@@ -137,13 +129,22 @@ func insertPlayer(player models.Player) {
 	getGame().Players = append(getGame().Players, player)
 }
 func deletePlayer(username string) {
+	fmt.Println("[deletePlayer]delete:", username)
 	getGame().PlayersMutex.Lock()
-	defer getGame().PlayersMutex.Unlock()
 	for i := 0; i < len(getGame().Players); i++ {
 		if getGame().Players[i].Username == username {
 			getGame().Players = append(getGame().Players[:i], getGame().Players[i+1:]...)
 			break
 		}
+	}
+	getGame().PlayersMutex.Unlock()
+	if getGame().Status != RUNNING {
+		return
+	}
+	// 如果游戏正在进行中，玩家数少于2，游戏结束
+	if len(getGame().Players) < 2 {
+		sendGameStatus(1)
+		stopGame()
 	}
 }
 func finishPlayer(username string) error {
@@ -291,6 +292,11 @@ func (c *GameController) KillVirus() {
 		c.Ctx.WriteString("fail")
 		return
 	}
+	if getGame().Squares[player.PosX][player.PosY].Virus == 0 {
+		fmt.Printf("[KillVirus]%s is not in a square including virus\n", req.Username)
+		c.Ctx.WriteString("fail")
+		return
+	}
 	var energyNeed float32
 	if player.Occupation == DOCTOR {
 		energyNeed = 1.0
@@ -304,6 +310,7 @@ func (c *GameController) KillVirus() {
 	}
 	getGame().Squares[player.PosX][player.PosY].Virus = 0
 	player.Energy -= energyNeed
+	getGame().VirusNum--
 	killReq := models.KillVirusWSReq{Type: models.SUB_VIRUS, PosX: req.PosX, PosY: req.PosY}
 	err = sendJSON(killReq)
 	if err != nil {
@@ -311,6 +318,10 @@ func (c *GameController) KillVirus() {
 	}
 
 	c.Ctx.WriteString("ok")
+	if getGame().VirusNum == 0 {
+		sendGameStatus(3)
+		stopGame()
+	}
 }
 
 func (c *GameController) BuildInstitute() {
@@ -383,10 +394,15 @@ func (c *GameController) DoResearch() {
 	}
 
 	c.Ctx.WriteString("ok")
+	if getGame().Progress == 100 {
+		sendGameStatus(3)
+		stopGame()
+	}
 }
 
 // 玩家准备完成，初始化游戏，向玩家广播游戏初始化信息
 func GameInit() {
+	fmt.Println("[GameInit]game on!")
 	getGame().Status = RUNNING
 	getGame().Round = 1
 	getGame().VirusNum = virus1Num[getGame().Round-1] + virus2Num[getGame().Round-1] + virus3Num[getGame().Round-1]
@@ -435,7 +451,6 @@ func GameInit() {
 		getGame().Players[i].Occupation = occupations[chosen]
 		getGame().Players[i].PosX = rand.Intn(7)
 		getGame().Players[i].PosY = rand.Intn(7)
-		// getGame().Squares[getGame().Players[i].PosX][getGame().Players[i].PosY].Player = getGame().Players[i].Username
 	}
 	go sendGameInfo()
 	time.Sleep(time.Millisecond * 100)
@@ -443,14 +458,14 @@ func GameInit() {
 }
 
 func sendGameStatus(status int) {
-	gameInfoBroadcast <- status
 	if status == 2 { // 游戏状态更新，只是为了sendGameInfo()
+		gameInfoBroadcast <- status
 		return
 	}
 	var statusReq models.StatusReq
 	if status == 0 { // 游戏开始
 		statusReq = models.StatusReq{Running: "yes", Message: ""}
-	} else if status == 1 { // 游戏失败
+	} else if status == 1 { // 游戏失败，结束sendGameInfo协程
 		statusReq = models.StatusReq{Running: "no", Message: "lose"}
 	} else if status == 3 { // 游戏胜利
 		statusReq = models.StatusReq{Running: "no", Message: "win"}
@@ -460,12 +475,14 @@ func sendGameStatus(status int) {
 		err := client.WriteJSON(statusReq)
 		getWebSocketManager().webSocketMutex.Unlock()
 		if err != nil {
-			fmt.Printf("[startGame]client.WriteJSON error: %v", err)
+			fmt.Printf("[startGame]client.WriteJSON error: %v\n", err)
 		}
 	}
+	gameInfoBroadcast <- status
 }
 
 func stopGame() {
+	fmt.Println("[stopGame]game end!")
 	getGame().Status = PREPARE
 	getGame().Round = 1
 	getGame().FinishNum = 0
@@ -486,7 +503,7 @@ func sendGameInfo() {
 	// 游戏信息变动时，向客户端广播地图信息，直到游戏结束
 	for {
 		status := <-gameInfoBroadcast
-		if status == 1 {
+		if status == 1 { // 游戏失败，不再更新游戏信息
 			return
 		}
 		gameInfo := models.GameInfo{Map: getGame().Squares, Players: getGame().Players,
@@ -506,11 +523,6 @@ func newRound() {
 		stopGame()
 		return
 	}
-	// if getGame().VirusNum == 0 {
-	// 	sendGameStatus(3)
-	// 	stopGame()
-	// 	return
-	// }
 	getGame().VirusNum = getGame().VirusNum + virus1Num[getGame().Round-1] + virus2Num[getGame().Round-1] + virus3Num[getGame().Round-1]
 	if getGame().VirusNum > 49 {
 		sendGameStatus(1)

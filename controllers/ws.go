@@ -32,6 +32,7 @@ func (c *WebSocketController) Get() {
 	}
 	insertWebSocket(ws)
 	handleMessages(ws)
+	c.TplName = "login.tpl"
 }
 
 func sendServerInfo() {
@@ -49,10 +50,6 @@ func sendServerInfo() {
 				log.Printf("[sendServerInfo]client.WriteJSON error: %v", err)
 				deleteUser(getWebSocketManager().activeWebSockets[client])
 				deletePlayer(getWebSocketManager().activeWebSockets[client])
-				if len(getGame().Players) < 1 {
-					stopGame()
-					sendGameStatus(1)
-				}
 				deleteWebSocket(client)
 				err = client.Close()
 				if err != nil {
