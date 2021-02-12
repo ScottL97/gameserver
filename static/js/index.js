@@ -146,11 +146,17 @@ var userChangeReady = function (action) {
 };
 // 玩家回合结束
 var userFinish = function () {
+    $("#btn-finish").hide();
     $.get("/gamectrl/finish/" + myName, function (data, status) {
         if (status == "success") {
             console.log("userFinish: ", data);
-            if (data == "warn") {
+            if (data == "ok") {
+                // 如果在这里隐藏按钮，由于是异步的，所以会导致开始了新回合时按钮还是没有恢复显示，实际是新回合显示了但又隐藏了
+            } else if (data == "warn") {
                 alert("请等待其他玩家结束回合...");
+            } else {
+                $("#btn-finish").show();
+                alert("您不在游戏中...");
             }
         }
     });
@@ -163,9 +169,9 @@ var changeGameStatus = function (req) {
         $("#game").hide(1000);
         $("#btn-ready").text("准备");
         if (req["message"] == "win") {
-            alert("you win!");
+            alert("游戏胜利!");
         } else {
-            alert("you lose!");
+            alert("游戏失败!");
         }
     }
 };
@@ -214,20 +220,6 @@ var getPlayerObj = function () {
     });
     return playerObj;
 };
-// var changePlayerPos = function (username, curx, cury, tarx, tary, energyNeed) {
-//     console.log("[changePlayerPos]username:", username);
-    
-//     // 更新当前位置和能量
-//     $.each(players, function (i, e) {
-//         if (e["username"] == username) {
-//             e["posx"] = tarx;
-//             e["posy"] = tary;
-//             e["energy"] -= energyNeed;
-//             // 修改当前能量显示
-//             $("#energy").text(e["energy"]);
-//         }
-//     });
-// }
 // 更新游戏信息
 var updateGame = function (req) {
     console.log("updateGame:", req);
@@ -236,7 +228,7 @@ var updateGame = function (req) {
     // 更新当前研究进度
     $("#research").text(req["progress"]);
     // 恢复显示“回合结束”按钮
-    // $("#btn-finish").show();
+    $("#btn-finish").show();
     // $("#status").text("");
     // 司机携带人置空
     toDrive = "";
