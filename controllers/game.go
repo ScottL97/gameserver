@@ -93,12 +93,6 @@ func (c *GameController) UserReady() {
 	player := models.Player{Username: usernameParam, Energy: 4}
 	insertPlayer(player)
 	c.Ctx.WriteString("ok")
-	// readyUsernames := []string{}
-	// for _, p := range getGame().Players {
-	// 	readyUsernames = append(readyUsernames, p.Username)
-	// }
-	// c.Data["json"] = &ReadyUsernames{Usernames: readyUsernames}
-	// c.ServeJSON()
 	// todo: 如果还有未准备的玩家，进行等待，限制玩家数为3-4
 	fmt.Println("len(getGame().Players): ", len(getGame().Players))
 	if len(getGame().Players) >= PLAYER_NUM {

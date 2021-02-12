@@ -22,6 +22,7 @@
     </audio>
     <div>在线用户: <span id="player-num"></span></div>
     <div>游戏状态：<span id="game-status"></span></div>
+    <div>已准备：<span id="players"></span></div>
     <div class="you">
       <p>姓名: <span id="username"></span></p>
       <p>行动力: <span id="energy">0</span></p>

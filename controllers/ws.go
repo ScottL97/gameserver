@@ -36,10 +36,15 @@ func (c *WebSocketController) Get() {
 }
 
 func sendServerInfo() {
+	players := make([]string, 5)
 	// 每隔60ms向客户端广播服务器信息，如果发送信息失败，则客户端已断开连接，从活动websocket中删除
 	for {
 		time.Sleep(time.Millisecond * 60)
-		serverInfo := models.ServerInfo{Users: getUserManager().loginUsers, GameStatus: getGame().Status}
+		players = players[0:0]
+		for _, player := range getGame().Players {
+			players = append(players, player.Username)
+		}
+		serverInfo := models.ServerInfo{Users: getUserManager().loginUsers, GameStatus: getGame().Status, Players: players}
 		for client := range getWebSocketManager().activeWebSockets {
 			getWebSocketManager().webSocketMutex.Lock()
 			err := client.WriteJSON(serverInfo)

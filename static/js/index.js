@@ -42,14 +42,16 @@ var sendMessage = function (ws) {
     }
 };
 // 刷新玩家信息
-// 参数：{"name1": "uuid1", "name2": "uuid2", ...}
+// users是一个map：{"name1": "uuid1", "name2": "uuid2", ...}
 var updateUsers = function (req) {
     let users = req["users"];
     let status = req["gamestatus"];
     if ($("#game-status").text() != gameStatus[status]) {
         $("#game-status").text(gameStatus[status]);
     }
-    // console.log(users);
+    if (req["players"] != null) {
+        $("#players").text(req["players"].join(','));
+    }
     // 将参数的键/值对调，因为uuid是唯一的，但用户名可能与已有id冲突
     let newIds = {};
     $.each(users, function (i, e) {
