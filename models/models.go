@@ -1,7 +1,8 @@
 package models
 
 type ServerInfo struct {
-	Users map[string]string `json:"users"`
+	Users      map[string]string `json:"users"`
+	GameStatus int               `json:"gamestatus"`
 	//Messages []ClientMsg `json:messages`
 	//Time string `json:time`
 }

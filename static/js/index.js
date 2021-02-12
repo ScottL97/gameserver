@@ -15,7 +15,8 @@ var occupationsDetail = [
     "可以在有研究所的格子内进行研究，每次消耗2行动力，进度+5%",
     "可以在没有研究所的格子内建造研究所，每次消耗4行动力",
     "消灭病毒消耗行动力为1，其他玩家为1+病毒等级",
-    "移动1格消耗0.5行动力，可以搭载1名在同一格的其他玩家到达另一位置，被搭载的玩家不消耗行动力"]
+    "移动1格消耗0.5行动力，可以搭载1名在同一格的其他玩家到达另一位置，被搭载的玩家不消耗行动力"];
+var gameStatus = ["游戏未开始", "游戏进行中"];
 var cmds = {
     ADD_VIRUS: 0, // 添加病毒
     SUB_VIRUS: 1,           // 清除病毒
@@ -42,7 +43,12 @@ var sendMessage = function (ws) {
 };
 // 刷新玩家信息
 // 参数：{"name1": "uuid1", "name2": "uuid2", ...}
-var updateUsers = function (users) {
+var updateUsers = function (req) {
+    let users = req["users"];
+    let status = req["gamestatus"];
+    if ($("#game-status").text() != gameStatus[status]) {
+        $("#game-status").text(gameStatus[status]);
+    }
     // console.log(users);
     // 将参数的键/值对调，因为uuid是唯一的，但用户名可能与已有id冲突
     let newIds = {};
@@ -500,7 +506,7 @@ var wsProcess = function () {
         // todo: 回合结束的同步
         let reqData = JSON.parse(e.data);
         if (reqData["users"] !== undefined) { // 收到服务器定时发送的用户信息等
-            updateUsers(reqData["users"]);
+            updateUsers(reqData);
         } else if (reqData["id"] !== undefined) { // 收到消息
             appendMessage(reqData);
         } else if (reqData["running"] !== undefined) { // 开始、结束游戏
