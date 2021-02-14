@@ -48,6 +48,9 @@ header {
 .toolicon img:hover {
     background: lightsalmon;
 }
+audio {
+    width: 100%;
+}
 
 #gamewindow {
     display: flex;
